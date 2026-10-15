@@ -1,0 +1,4 @@
+shazamio>=0.7
+sounddevice>=0.4
+numpy>=1.24
+aiohttp>=3.9

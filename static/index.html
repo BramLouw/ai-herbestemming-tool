@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Now Playing</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden;
+    font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  #bg { position: fixed; top: -10%; left: -10%; width: 120%; height: 120%;
+    background-size: cover; background-position: center;
+    -webkit-filter: blur(40px) brightness(0.45); filter: blur(40px) brightness(0.45);
+    opacity: 0; -webkit-transition: opacity 1.5s; transition: opacity 1.5s; }
+  #wrap { position: relative; height: 100%; display: -webkit-box; display: -webkit-flex; display: flex;
+    -webkit-flex-direction: column; flex-direction: column;
+    -webkit-align-items: center; align-items: center;
+    -webkit-justify-content: center; justify-content: center; text-align: center; padding: 0 5%; box-sizing: border-box; }
+  .label { font-size: 2.2vmin; letter-spacing: 0.4em; text-transform: uppercase; opacity: 0.7; margin-bottom: 3vmin; }
+  #cover { width: 62vmin; height: 62vmin; box-shadow: 0 2vmin 6vmin rgba(0,0,0,0.6); border-radius: 1vmin;
+    background: #111 center / cover no-repeat; }
+  #title { font-size: 4.4vmin; font-weight: 600; margin-top: 4vmin; }
+  #artist { font-size: 3.2vmin; opacity: 0.85; margin-top: 1vmin; }
+  #album { font-size: 2.4vmin; opacity: 0.6; margin-top: 0.8vmin; }
+  #idle { display: none; font-size: 3vmin; opacity: 0.4; }
+  .fade { -webkit-transition: opacity 0.8s; transition: opacity 0.8s; }
+  body.idle #playing { display: none; }
+  body.idle #idle { display: block; }
+  @media (orientation: landscape) {
+    #playing { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; text-align: left; }
+    #cover { width: 70vmin; height: 70vmin; }
+    #meta { margin-left: 6vmin; max-width: 45vw; }
+    #title { margin-top: 0; font-size: 5vmin; }
+    body.idle #playing { display: none; }
+  }
+</style>
+</head>
+<body class="idle">
+<div id="bg"></div>
+<div id="wrap">
+  <div id="playing" class="fade">
+    <div id="cover"></div>
+    <div id="meta">
+      <div class="label">Now playing</div>
+      <div id="title"></div>
+      <div id="artist"></div>
+      <div id="album"></div>
+    </div>
+  </div>
+  <div id="idle">Zet een plaat op</div>
+</div>
+<script>
+// Bewust ouderwets JavaScript (XHR, var) zodat het ook op oude iPads werkt.
+var lastKey = null;
+function $(id) { return document.getElementById(id); }
+function render(s) {
+  var key = s.playing ? s.title + "|" + s.artist : "idle";
+  if (key === lastKey) return;
+  lastKey = key;
+  if (!s.playing) { document.body.className = "idle"; $("bg").style.opacity = 0; return; }
+  var img = new Image();
+  img.onload = img.onerror = function () {
+    document.body.className = "";
+    $("cover").style.backgroundImage = s.cover ? "url('" + s.cover + "')" : "none";
+    $("bg").style.backgroundImage = s.cover ? "url('" + s.cover + "')" : "none";
+    $("bg").style.opacity = 1;
+    $("title").textContent = s.title;
+    $("artist").textContent = s.artist;
+    $("album").textContent = s.album || "";
+  };
+  img.src = s.cover;
+}
+function poll() {
+  var x = new XMLHttpRequest();
+  x.open("GET", "/api/state?t=" + Date.now());
+  x.onload = function () { try { render(JSON.parse(x.responseText)); } catch (e) {} };
+  x.send();
+}
+poll();
+setInterval(poll, 3000);
+</script>
+</body>
+</html>
