@@ -22,6 +22,18 @@ python server.py
 
 Zoek het IP-adres van de computer op (`hostname -I`) en open `http://<ip>:8080` op de iPad.
 
+## Het scherm
+
+Veeg naar links of rechts om te wisselen tussen drie pagina's:
+
+1. **Hoes**: albumhoes, titel, artiest en een voortgangsbalk. Shazam vertelt hoe ver het nummer is. De lengte komt van iTunes.
+2. **Songtekst**: meelopende tekst zoals in Apple Music, via lrclib.net. Is er geen tijdgecodeerde tekst, dan zie je de gewone tekst.
+3. **Info**: album, jaar, genre, label, tracknummer, duur en een korte beschrijving van de artiest van Wikipedia.
+
+Als er niets speelt, toont het scherm een klok.
+
+Wil je het ontwerp zien zonder microfoon? Start dan `DEMO=1 python server.py`.
+
 ## Op de iPad
 
 1. Open de pagina in Safari.
