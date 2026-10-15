@@ -2,83 +2,403 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Now Playing">
 <title>Now Playing</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #000; color: #fff; overflow: hidden;
-    font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; }
-  #bg { position: fixed; top: -10%; left: -10%; width: 120%; height: 120%;
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; color: #fff;
+    font-family: -apple-system, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; -webkit-user-select: none; user-select: none;
+    -webkit-text-size-adjust: 100%; }
+
+  /* ---------- achtergrond ---------- */
+  .bg { position: fixed; top: -25%; left: -25%; width: 150%; height: 150%;
     background-size: cover; background-position: center;
-    -webkit-filter: blur(40px) brightness(0.45); filter: blur(40px) brightness(0.45);
-    opacity: 0; -webkit-transition: opacity 1.5s; transition: opacity 1.5s; }
-  #wrap { position: relative; height: 100%; display: -webkit-box; display: -webkit-flex; display: flex;
-    -webkit-flex-direction: column; flex-direction: column;
-    -webkit-align-items: center; align-items: center;
-    -webkit-justify-content: center; justify-content: center; text-align: center; padding: 0 5%; box-sizing: border-box; }
-  .label { font-size: 2.2vmin; letter-spacing: 0.4em; text-transform: uppercase; opacity: 0.7; margin-bottom: 3vmin; }
-  #cover { width: 62vmin; height: 62vmin; box-shadow: 0 2vmin 6vmin rgba(0,0,0,0.6); border-radius: 1vmin;
-    background: #111 center / cover no-repeat; }
-  #title { font-size: 4.4vmin; font-weight: 600; margin-top: 4vmin; }
-  #artist { font-size: 3.2vmin; opacity: 0.85; margin-top: 1vmin; }
-  #album { font-size: 2.4vmin; opacity: 0.6; margin-top: 0.8vmin; }
-  #idle { display: none; font-size: 3vmin; opacity: 0.4; }
-  .fade { -webkit-transition: opacity 0.8s; transition: opacity 0.8s; }
-  body.idle #playing { display: none; }
-  body.idle #idle { display: block; }
+    -webkit-filter: blur(70px) saturate(1.6); filter: blur(70px) saturate(1.6);
+    opacity: 0; -webkit-transition: opacity 1.6s ease; transition: opacity 1.6s ease;
+    -webkit-animation: drift 40s ease-in-out infinite alternate; animation: drift 40s ease-in-out infinite alternate; }
+  .bg.show { opacity: 1; }
+  .shade { position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.38);
+    background: -webkit-radial-gradient(center, ellipse cover, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%);
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%); }
+  @-webkit-keyframes drift { from { -webkit-transform: scale(1) rotate(0deg); } to { -webkit-transform: scale(1.15) rotate(8deg); } }
+  @keyframes drift { from { transform: scale(1) rotate(0deg); } to { transform: scale(1.15) rotate(8deg); } }
+
+  /* ---------- pagina's ---------- */
+  #pager { position: fixed; top: 0; left: 0; height: 100%; width: 300%; display: -webkit-box; display: -webkit-flex; display: flex;
+    -webkit-transform: translate3d(0,0,0); transform: translate3d(0,0,0); will-change: transform; }
+  #pager.anim { -webkit-transition: -webkit-transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+  .page { width: 33.3334%; height: 100%; position: relative; overflow: hidden;
+    padding: max(6vmin, env(safe-area-inset-top)) 7vmin 11vmin; }
+  body.idle #pager, body.idle #dots { opacity: 0; pointer-events: none; }
+  #pager, #dots { -webkit-transition: opacity 0.8s; transition: opacity 0.8s; }
+
+  /* ---------- pagina 1: hoes ---------- */
+  .now { height: 100%; display: -webkit-box; display: -webkit-flex; display: flex;
+    -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center;
+    -webkit-justify-content: center; justify-content: center; }
+  .art { position: relative; width: 58vmin; height: 58vmin; border-radius: 2vmin; overflow: hidden;
+    background: #2a2a30; -webkit-flex-shrink: 0; flex-shrink: 0;
+    box-shadow: 0 3vmin 8vmin rgba(0,0,0,0.5), 0 0.5vmin 1.5vmin rgba(0,0,0,0.3); }
+  .art div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;
+    -webkit-transition: opacity 0.9s ease; transition: opacity 0.9s ease; }
+  .art .placeholder { background: -webkit-linear-gradient(135deg, #3a3a44, #1c1c22); background: linear-gradient(135deg, #3a3a44, #1c1c22);
+    display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; }
+  .art .placeholder svg { width: 32%; height: 32%; fill: rgba(255,255,255,0.25); }
+  .meta { width: 58vmin; margin-top: 5vmin; }
+  .eyebrow { font-size: 1.7vmin; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.6); display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-bottom: 1.6vmin; }
+  .eq { display: inline-block; height: 1.8vmin; margin-right: 1.2vmin; }
+  .eq i { display: inline-block; width: 0.45vmin; height: 100%; margin-right: 0.3vmin; background: rgba(255,255,255,0.75); border-radius: 0.3vmin;
+    -webkit-transform-origin: bottom; transform-origin: bottom;
+    -webkit-animation: eq 1s ease-in-out infinite alternate; animation: eq 1s ease-in-out infinite alternate; }
+  .eq i:nth-child(2) { -webkit-animation-delay: -0.4s; animation-delay: -0.4s; -webkit-animation-duration: 0.8s; animation-duration: 0.8s; }
+  .eq i:nth-child(3) { -webkit-animation-delay: -0.7s; animation-delay: -0.7s; -webkit-animation-duration: 1.2s; animation-duration: 1.2s; }
+  @-webkit-keyframes eq { from { -webkit-transform: scaleY(0.25); } to { -webkit-transform: scaleY(1); } }
+  @keyframes eq { from { transform: scaleY(0.25); } to { transform: scaleY(1); } }
+  .title { font-size: 4.4vmin; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .artist { font-size: 3.4vmin; font-weight: 500; color: rgba(255,255,255,0.62); margin-top: 0.6vmin;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .album { font-size: 2.1vmin; color: rgba(255,255,255,0.42); margin-top: 0.8vmin;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .progress { margin-top: 4vmin; }
+  .bar { height: 0.9vmin; min-height: 5px; border-radius: 1vmin; background: rgba(255,255,255,0.18); overflow: hidden; }
+  .fill { height: 100%; width: 100%; border-radius: 1vmin; background: rgba(255,255,255,0.85);
+    -webkit-transform-origin: left; transform-origin: left; -webkit-transform: scaleX(0); transform: scaleX(0); }
+  .times { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between;
+    margin-top: 1.2vmin; font-size: 1.7vmin; font-weight: 600; color: rgba(255,255,255,0.45);
+    font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+
   @media (orientation: landscape) {
-    #playing { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; text-align: left; }
-    #cover { width: 70vmin; height: 70vmin; }
-    #meta { margin-left: 6vmin; max-width: 45vw; }
-    #title { margin-top: 0; font-size: 5vmin; }
-    body.idle #playing { display: none; }
+    .now { -webkit-flex-direction: row; flex-direction: row; }
+    .art { width: 72vmin; height: 72vmin; }
+    .meta { width: 46vmin; margin: 0 0 0 7vmin; }
+    .title { font-size: 5vmin; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   }
+
+  /* ---------- pagina 2: songtekst ---------- */
+  .head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+  .thumb { width: 8vmin; height: 8vmin; border-radius: 1vmin; background: #2a2a30 center / cover no-repeat; -webkit-flex-shrink: 0; flex-shrink: 0;
+    box-shadow: 0 1vmin 3vmin rgba(0,0,0,0.4); }
+  .head .t { margin-left: 2.4vmin; min-width: 0; }
+  .head .t1 { font-size: 2.5vmin; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .head .t2 { font-size: 2.1vmin; color: rgba(255,255,255,0.55); margin-top: 0.3vmin; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .minibar { -webkit-flex: 1; flex: 1; margin-left: 4vmin; max-width: 30vmin; }
+  .minibar .bar { height: 0.6vmin; min-height: 4px; }
+
+  .lyrics-view { position: absolute; top: 18vmin; bottom: 9vmin; left: 7vmin; right: 7vmin; overflow: hidden;
+    -webkit-mask-image: -webkit-linear-gradient(top, transparent 0%, #000 12%, #000 75%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 75%, transparent 100%); }
+  #lyrics { -webkit-transition: -webkit-transform 0.8s cubic-bezier(0.22, 1, 0.36, 1); transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+  .line { font-size: 5.2vmin; font-weight: 700; letter-spacing: -0.015em; line-height: 1.22; padding: 1.4vmin 0;
+    color: rgba(255,255,255,0.28); -webkit-transition: color 0.5s, -webkit-transform 0.5s; transition: color 0.5s, transform 0.5s;
+    -webkit-transform-origin: left center; transform-origin: left center; max-width: 92%; }
+  .line.past { color: rgba(255,255,255,0.18); }
+  .line.on { color: #fff; }
+  .line.gap { font-size: 4vmin; }
+  .plain { position: absolute; top: 18vmin; bottom: 0; left: 7vmin; right: 7vmin; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    font-size: 3.6vmin; font-weight: 600; line-height: 1.45; color: rgba(255,255,255,0.8); white-space: pre-line; padding-bottom: 12vmin; }
+  .empty { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: -webkit-flex; display: flex;
+    -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center;
+    font-size: 2.8vmin; font-weight: 600; color: rgba(255,255,255,0.4); }
+
+  /* ---------- pagina 3: info ---------- */
+  .info { position: absolute; top: 18vmin; bottom: 0; left: 7vmin; right: 7vmin; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 12vmin; }
+  .grid { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin: -0.8vmin; }
+  .card { margin: 0.8vmin; padding: 2.4vmin 2.6vmin; border-radius: 2.2vmin; background: rgba(255,255,255,0.1);
+    -webkit-backdrop-filter: blur(30px) saturate(1.5); backdrop-filter: blur(30px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.08); }
+  .stat { -webkit-flex: 1 1 30%; flex: 1 1 30%; min-width: 0; }
+  .stat .k { font-size: 1.6vmin; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+  .stat .v { font-size: 3.2vmin; font-weight: 700; margin-top: 0.8vmin; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .about { margin: 2.4vmin 0 0; }
+  .about h2 { margin: 0 0 1.4vmin; font-size: 2.6vmin; font-weight: 700; }
+  .about p { margin: 0; font-size: 2.4vmin; line-height: 1.55; color: rgba(255,255,255,0.78); }
+  .about .src { margin-top: 1.6vmin; font-size: 1.6vmin; color: rgba(255,255,255,0.38); }
+
+  /* ---------- paginapuntjes ---------- */
+  #dots { position: fixed; left: 0; right: 0; bottom: max(3.5vmin, env(safe-area-inset-bottom)); text-align: center; }
+  #dots span { display: inline-block; width: 1.1vmin; height: 1.1vmin; min-width: 7px; min-height: 7px; margin: 0 0.7vmin; border-radius: 50%;
+    background: rgba(255,255,255,0.3); -webkit-transition: background 0.3s, -webkit-transform 0.3s; transition: background 0.3s, transform 0.3s; }
+  #dots span.on { background: rgba(255,255,255,0.95); }
+
+  /* ---------- rust ---------- */
+  #idle { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: -webkit-flex; display: flex;
+    -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center;
+    -webkit-justify-content: center; justify-content: center; opacity: 0; pointer-events: none;
+    -webkit-transition: opacity 1s; transition: opacity 1s; }
+  body.idle #idle { opacity: 1; }
+  #clock { font-size: 22vmin; font-weight: 200; letter-spacing: -0.04em; color: rgba(255,255,255,0.88);
+    font-variant-numeric: tabular-nums; -webkit-font-feature-settings: "tnum"; font-feature-settings: "tnum"; }
+  #date { font-size: 3vmin; font-weight: 500; color: rgba(255,255,255,0.5); margin-top: -1vmin; }
+  .hint { margin-top: 8vmin; font-size: 2.2vmin; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.32); }
 </style>
 </head>
 <body class="idle">
-<div id="bg"></div>
-<div id="wrap">
-  <div id="playing" class="fade">
-    <div id="cover"></div>
-    <div id="meta">
-      <div class="label">Now playing</div>
-      <div id="title"></div>
-      <div id="artist"></div>
-      <div id="album"></div>
+<div class="bg" id="bgA"></div><div class="bg" id="bgB"></div>
+<div class="shade"></div>
+
+<div id="pager">
+  <!-- 1: hoes -->
+  <section class="page">
+    <div class="now">
+      <div class="art" id="art">
+        <div class="placeholder"><svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>
+        <div id="artA" style="opacity:0"></div><div id="artB" style="opacity:0"></div>
+      </div>
+      <div class="meta">
+        <div class="eyebrow"><span class="eq"><i></i><i></i><i></i></span>Now playing</div>
+        <div class="title" id="title"></div>
+        <div class="artist" id="artist"></div>
+        <div class="album" id="album"></div>
+        <div class="progress" id="progress">
+          <div class="bar"><div class="fill" id="fill"></div></div>
+          <div class="times"><span id="elapsed">0:00</span><span id="remain">-0:00</span></div>
+        </div>
+      </div>
     </div>
-  </div>
-  <div id="idle">Zet een plaat op</div>
+  </section>
+
+  <!-- 2: songtekst -->
+  <section class="page">
+    <div class="head">
+      <div class="thumb" id="thumb2"></div>
+      <div class="t"><div class="t1" id="t2a"></div><div class="t2" id="t2b"></div></div>
+    </div>
+    <div class="lyrics-view" id="lyricsView"><div id="lyrics"></div></div>
+    <div class="plain" id="plain" style="display:none"></div>
+    <div class="empty" id="noLyrics" style="display:none">Geen songtekst gevonden</div>
+  </section>
+
+  <!-- 3: info -->
+  <section class="page">
+    <div class="head">
+      <div class="thumb" id="thumb3"></div>
+      <div class="t"><div class="t1" id="t3a"></div><div class="t2" id="t3b"></div></div>
+    </div>
+    <div class="info">
+      <div class="grid" id="stats"></div>
+      <div class="card about" id="about" style="display:none">
+        <h2 id="aboutTitle"></h2>
+        <p id="bio"></p>
+        <div class="src" id="bioSrc"></div>
+      </div>
+    </div>
+  </section>
 </div>
+
+<div id="dots"><span class="on"></span><span></span><span></span></div>
+
+<div id="idle">
+  <div id="clock">--:--</div>
+  <div id="date"></div>
+  <div class="hint">Zet een plaat op</div>
+</div>
+
 <script>
-// Bewust ouderwets JavaScript (XHR, var) zodat het ook op oude iPads werkt.
-var lastKey = null;
-function $(id) { return document.getElementById(id); }
-function render(s) {
-  var key = s.playing ? s.title + "|" + s.artist : "idle";
-  if (key === lastKey) return;
-  lastKey = key;
-  if (!s.playing) { document.body.className = "idle"; $("bg").style.opacity = 0; return; }
-  var img = new Image();
-  img.onload = img.onerror = function () {
-    document.body.className = "";
-    $("cover").style.backgroundImage = s.cover ? "url('" + s.cover + "')" : "none";
-    $("bg").style.backgroundImage = s.cover ? "url('" + s.cover + "')" : "none";
-    $("bg").style.opacity = 1;
+// Bewust ES5 (var, XHR, geen arrow functions) zodat het ook op oude iPads draait.
+(function () {
+  function $(id) { return document.getElementById(id); }
+  var cur = null, key = null;
+  var pos = 0, posAt = 0;          // positie in seconden en wanneer we die kregen
+  var activeLine = -2;
+  var page = 0, W = window.innerWidth;
+  var bgFront = $("bgA"), bgBack = $("bgB"), artFront = $("artA"), artBack = $("artB");
+
+  function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  function fmt(s) {
+    s = Math.max(0, Math.floor(s));
+    var m = Math.floor(s / 60), r = s % 60;
+    return m + ":" + (r < 10 ? "0" : "") + r;
+  }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function bgUrl(u) { return u ? "url(\"" + u.replace(/"/g, "%22") + "\")" : "none"; }
+
+  // ---------- nieuw nummer tonen ----------
+  function showTrack(s) {
+    var url = bgUrl(s.cover);
+    var swap = function () {
+      artBack.style.backgroundImage = url; artBack.style.opacity = s.cover ? 1 : 0; artFront.style.opacity = 0;
+      var t = artFront; artFront = artBack; artBack = t;
+      bgBack.style.backgroundImage = url; bgBack.className = s.cover ? "bg show" : "bg"; bgFront.className = "bg";
+      t = bgFront; bgFront = bgBack; bgBack = t;
+      $("thumb2").style.backgroundImage = url; $("thumb3").style.backgroundImage = url;
+    };
+    if (s.cover) { var img = new Image(); img.onload = img.onerror = swap; img.src = s.cover; } else swap();
+
     $("title").textContent = s.title;
     $("artist").textContent = s.artist;
-    $("album").textContent = s.album || "";
-  };
-  img.src = s.cover;
-}
-function poll() {
-  var x = new XMLHttpRequest();
-  x.open("GET", "/api/state?t=" + Date.now());
-  x.onload = function () { try { render(JSON.parse(x.responseText)); } catch (e) {} };
-  x.send();
-}
-poll();
-setInterval(poll, 3000);
+    $("album").textContent = [s.album, s.year].filter(Boolean).join(" · ");
+    $("t2a").textContent = $("t3a").textContent = s.title;
+    $("t2b").textContent = $("t3b").textContent = s.artist;
+    $("progress").style.visibility = s.duration ? "visible" : "hidden";
+
+    buildLyrics(s);
+    buildInfo(s);
+  }
+
+  function buildLyrics(s) {
+    var box = $("lyrics"), html = "";
+    activeLine = -2;
+    $("lyricsView").style.display = $("plain").style.display = $("noLyrics").style.display = "none";
+    if (s.lyrics && s.lyrics.length) {
+      for (var i = 0; i < s.lyrics.length; i++) {
+        var txt = s.lyrics[i].text;
+        html += "<div class=\"line" + (txt ? "" : " gap") + "\">" + (txt ? esc(txt) : "• • •") + "</div>";
+      }
+      box.innerHTML = html;
+      box.style.webkitTransform = box.style.transform = "translate3d(0,0,0)";
+      $("lyricsView").style.display = "block";
+    } else if (s.plain_lyrics) {
+      $("plain").textContent = s.plain_lyrics;
+      $("plain").scrollTop = 0;
+      $("plain").style.display = "block";
+    } else {
+      $("noLyrics").style.display = "flex";
+    }
+  }
+
+  function buildInfo(s) {
+    var stats = [
+      ["Album", s.album], ["Jaar", s.year], ["Genre", s.genre], ["Label", s.label],
+      ["Track", s.track_number ? s.track_number + (s.track_count ? " van " + s.track_count : "") : ""],
+      ["Duur", s.duration ? fmt(s.duration) : ""]
+    ], html = "";
+    for (var i = 0; i < stats.length; i++) {
+      if (stats[i][1]) html += "<div class=\"card stat\"><div class=\"k\">" + stats[i][0] + "</div><div class=\"v\">" + esc(stats[i][1]) + "</div></div>";
+    }
+    $("stats").innerHTML = html;
+    if (s.bio) {
+      $("aboutTitle").textContent = "Over " + s.artist;
+      $("bio").textContent = s.bio;
+      $("bioSrc").textContent = s.bio_source ? "Bron: " + s.bio_source : "";
+      $("about").style.display = "block";
+    } else {
+      $("about").style.display = "none";
+    }
+  }
+
+  // ---------- elke frame: voortgang en songtekst ----------
+  function tick() {
+    if (cur && cur.playing) {
+      var p = pos + (now() - posAt) / 1000;
+      var d = cur.duration;
+      if (d) {
+        p = Math.min(p, d);
+        var f = p / d;
+        $("fill").style.webkitTransform = $("fill").style.transform = "scaleX(" + f + ")";
+        $("elapsed").textContent = fmt(p);
+        $("remain").textContent = "-" + fmt(d - p);
+      }
+      if (cur.lyrics && cur.lyrics.length) syncLyrics(p);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function syncLyrics(p) {
+    var lines = cur.lyrics, idx = -1;
+    for (var i = 0; i < lines.length; i++) { if (lines[i].t <= p + 0.3) idx = i; else break; }
+    if (idx === activeLine) return;
+    activeLine = idx;
+    var els = $("lyrics").children;
+    for (var j = 0; j < els.length; j++) els[j].className = "line" + (lines[j].text ? "" : " gap") + (j === idx ? " on" : j < idx ? " past" : "");
+    var target = els[Math.max(idx, 0)];
+    if (!target) return;
+    var y = target.offsetTop - $("lyricsView").clientHeight * 0.3;
+    y = Math.max(0, y);
+    $("lyrics").style.webkitTransform = $("lyrics").style.transform = "translate3d(0," + (-y) + "px,0)";
+  }
+
+  // ---------- ophalen ----------
+  function poll() {
+    var x = new XMLHttpRequest();
+    x.open("GET", "/api/state?t=" + Date.now());
+    x.onload = function () {
+      var s;
+      try { s = JSON.parse(x.responseText); } catch (e) { return; }
+      var k = s.playing ? s.title + "|" + s.artist + "|" + s.updated : "idle";
+      var trackKey = s.playing ? s.title + "|" + s.artist : "idle";
+      if (s.playing) {
+        // Alleen bijstellen bij een nieuwe herkenning of grote afwijking, anders loopt de balk soepel door
+        var predicted = pos + (now() - posAt) / 1000;
+        if (k !== key || Math.abs(predicted - s.position) > 2) { pos = s.position; posAt = now(); }
+      }
+      if (!cur || trackKey !== (cur.playing ? cur.title + "|" + cur.artist : "idle")) {
+        if (s.playing) { document.body.className = ""; showTrack(s); }
+        else { document.body.className = "idle"; bgFront.className = "bg"; goTo(0, false); }
+      }
+      cur = s; key = k;
+    };
+    x.send();
+  }
+
+  // ---------- vegen ----------
+  var pager = $("pager"), dots = $("dots").children;
+  function setX(x) { pager.style.webkitTransform = pager.style.transform = "translate3d(" + x + "px,0,0)"; }
+  function goTo(i, anim) {
+    page = Math.max(0, Math.min(2, i));
+    pager.className = anim === false ? "" : "anim";
+    setX(-page * W);
+    for (var j = 0; j < dots.length; j++) dots[j].className = j === page ? "on" : "";
+    activeLine = -2; // songtekst opnieuw uitlijnen
+  }
+  var startX = 0, startY = 0, dx = 0, dragging = false, locked = null, t0 = 0;
+  function down(x, y) { startX = x; startY = y; dx = 0; dragging = true; locked = null; t0 = now(); pager.className = ""; }
+  function move(x, y, e) {
+    if (!dragging) return;
+    dx = x - startX;
+    if (locked === null && (Math.abs(dx) > 8 || Math.abs(y - startY) > 8)) locked = Math.abs(dx) > Math.abs(y - startY);
+    if (locked) {
+      if (e && e.preventDefault) e.preventDefault();
+      var edge = (page === 0 && dx > 0) || (page === 2 && dx < 0);
+      setX(-page * W + (edge ? dx * 0.3 : dx));
+    }
+  }
+  function up() {
+    if (!dragging) return;
+    dragging = false;
+    if (!locked) { goTo(page); return; }
+    var fast = Math.abs(dx) > 30 && now() - t0 < 300;
+    if (dx < -W * 0.2 || (fast && dx < 0)) goTo(page + 1);
+    else if (dx > W * 0.2 || (fast && dx > 0)) goTo(page - 1);
+    else goTo(page);
+  }
+  document.addEventListener("touchstart", function (e) { down(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  document.addEventListener("touchmove", function (e) { move(e.touches[0].clientX, e.touches[0].clientY, e); }, { passive: false });
+  document.addEventListener("touchend", up);
+  document.addEventListener("touchcancel", up);
+  document.addEventListener("mousedown", function (e) { down(e.clientX, e.clientY); });
+  document.addEventListener("mousemove", function (e) { move(e.clientX, e.clientY, e); });
+  document.addEventListener("mouseup", up);
+  document.addEventListener("keydown", function (e) {
+    if (e.keyCode === 39) goTo(page + 1);
+    if (e.keyCode === 37) goTo(page - 1);
+  });
+  for (var d = 0; d < dots.length; d++) (function (i) { dots[i].addEventListener("click", function () { goTo(i); }); })(d);
+  window.addEventListener("resize", function () { W = window.innerWidth; goTo(page, false); });
+
+  // ---------- klok ----------
+  var days = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+  var months = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+  function clock() {
+    var n = new Date(), m = n.getMinutes();
+    $("clock").textContent = n.getHours() + ":" + (m < 10 ? "0" : "") + m;
+    $("date").textContent = days[n.getDay()] + " " + n.getDate() + " " + months[n.getMonth()];
+  }
+
+  var raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame || function (f) { setTimeout(f, 33); };
+  window.requestAnimationFrame = raf;
+  clock(); setInterval(clock, 5000);
+  poll(); setInterval(poll, 3000);
+  raf(tick);
+})();
 </script>
 </body>
 </html>
